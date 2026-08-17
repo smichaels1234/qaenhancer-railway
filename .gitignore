@@ -1,5 +1,8 @@
+
+# Build output
 bin/
 obj/
-out/
-.vs/
-*.user
+
+# ASP.NET Core secrets — never commit real credentials
+appsettings.Development.json
+appsettings.*.json
