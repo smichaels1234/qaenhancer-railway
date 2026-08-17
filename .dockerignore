@@ -6,5 +6,3 @@ out/
 .git/
 .vs/
 *.user
-Dockerfile
-.dockerignore
