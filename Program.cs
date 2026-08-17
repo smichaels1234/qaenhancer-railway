@@ -9,8 +9,11 @@ using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Explicitly set URLs
-builder.WebHost.UseUrls("https://localhost:7058", "http://localhost:5252");
+// In hosted environments the URL comes from --urls/ASPNETCORE_URLS (Railway supplies PORT)
+if (builder.Environment.IsDevelopment())
+{
+    builder.WebHost.UseUrls("https://localhost:7058", "http://localhost:5252");
+}
 
 // Get the connection string from the configuration
 var connectionString = builder.Configuration.GetConnectionString("QAConnection") ??
@@ -131,9 +134,9 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
     app.UseSwagger();
     app.UseSwaggerUI();
+    app.UseHttpsRedirection();
 }
 
-app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 // Use CORS
