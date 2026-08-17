@@ -16,8 +16,12 @@ if (builder.Environment.IsDevelopment())
 }
 
 // Get the connection string from the configuration
-var connectionString = builder.Configuration.GetConnectionString("QAConnection") ??
-    throw new InvalidOperationException("Connection string 'QAConnection' not found.");
+var connectionString = builder.Configuration.GetConnectionString("QAConnection");
+if (string.IsNullOrWhiteSpace(connectionString))
+{
+    throw new InvalidOperationException(
+        "Connection string 'QAConnection' is not configured. Set the environment variable ConnectionStrings__QAConnection.");
+}
 
 // Add your DbContext with the PostgreSQL provider with optimized settings
 builder.Services.AddDbContext<QAEnhancerDbContext>(options =>
