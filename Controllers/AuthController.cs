@@ -20,19 +20,22 @@ public class AuthController : ControllerBase
     private readonly ITokenService _tokenService;
     private readonly ILogger<AuthController> _logger;
     private readonly QAEnhancerDbContext _context;
+    private readonly TurnstileVerificationService _turnstileVerificationService;
 
     public AuthController(
         UserManager<ApplicationUser> userManager,
         SignInManager<ApplicationUser> signInManager,
         ITokenService tokenService,
         ILogger<AuthController> logger,
-        QAEnhancerDbContext context)
+        QAEnhancerDbContext context,
+        TurnstileVerificationService turnstileVerificationService)
     {
         _userManager = userManager;
         _signInManager = signInManager;
         _tokenService = tokenService;
         _logger = logger;
         _context = context;
+        _turnstileVerificationService = turnstileVerificationService;
     }
 
     [HttpPost("register")]
@@ -43,6 +46,11 @@ public class AuthController : ControllerBase
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
+            }
+
+            if (!await _turnstileVerificationService.VerifyAsync(request.CaptchaToken, HttpContext.Connection.RemoteIpAddress?.ToString()))
+            {
+                return BadRequest(new { message = "Please complete the robot verification and try again." });
             }
 
             var planType = request.PlanType.Trim().ToLowerInvariant();

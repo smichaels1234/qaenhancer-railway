@@ -31,6 +31,9 @@ public class RegisterRequest
 
     [MaxLength(2000)]
     public string? Message { get; set; }
+
+    [Required]
+    public required string CaptchaToken { get; set; }
 }
 
 public class LoginRequest

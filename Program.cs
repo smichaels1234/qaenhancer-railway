@@ -117,6 +117,7 @@ builder.Services.AddControllers();
 
 // Add HttpClient for AI Analysis service
 builder.Services.AddHttpClient();
+builder.Services.AddScoped<TurnstileVerificationService>();
 
 // Register AI Bug Detection Service
 builder.Services.AddScoped<AIBugDetectionService>();
