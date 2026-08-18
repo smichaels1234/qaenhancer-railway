@@ -46,6 +46,9 @@ public class LoginRequest
     public required string Password { get; set; }
 
     public bool RememberMe { get; set; } = false;
+
+    [Required]
+    public required string CaptchaToken { get; set; }
 }
 
 public class AuthResponse

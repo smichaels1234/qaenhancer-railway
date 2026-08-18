@@ -163,6 +163,11 @@ public class AuthController : ControllerBase
             return BadRequest(ModelState);
         }
 
+        if (!await _turnstileVerificationService.VerifyAsync(request.CaptchaToken, HttpContext.Connection.RemoteIpAddress?.ToString()))
+        {
+            return BadRequest(new { message = "Please complete the robot verification and try again." });
+        }
+
         var user = await _userManager.FindByEmailAsync(request.Email);
         if (user == null)
         {
