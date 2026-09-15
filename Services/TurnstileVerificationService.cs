@@ -1,5 +1,3 @@
-using System.Net.Http.Json;
-
 namespace backend.Services;
 
 public sealed class TurnstileVerificationService
@@ -19,10 +17,18 @@ public sealed class TurnstileVerificationService
         _logger = logger;
     }
 
-    public async Task<bool> VerifyAsync(string token, string? remoteIpAddress)
+    public async Task<bool> VerifyAsync(string token, string expectedAction, string? remoteIpAddress)
     {
         var secretKey = _configuration["Turnstile:SecretKey"];
-        if (string.IsNullOrWhiteSpace(secretKey) || string.IsNullOrWhiteSpace(token))
+        var allowedHostnames = _configuration
+            .GetSection("Turnstile:AllowedHostnames")
+            .Get<string[]>() ?? Array.Empty<string>();
+
+        if (string.IsNullOrWhiteSpace(secretKey) ||
+            string.IsNullOrWhiteSpace(token) ||
+            token.Length > 2048 ||
+            string.IsNullOrWhiteSpace(expectedAction) ||
+            allowedHostnames.Length == 0)
         {
             _logger.LogWarning("Turnstile verification is not configured or the token is missing.");
             return false;
@@ -31,12 +37,12 @@ public sealed class TurnstileVerificationService
         try
         {
             var client = _httpClientFactory.CreateClient();
-            using var response = await client.PostAsJsonAsync(VerificationEndpoint, new
+            using var response = await client.PostAsync(VerificationEndpoint, new FormUrlEncodedContent(new Dictionary<string, string>
             {
-                secret = secretKey,
-                response = token,
-                remoteip = remoteIpAddress
-            });
+                ["secret"] = secretKey,
+                ["response"] = token,
+                ["remoteip"] = remoteIpAddress ?? string.Empty
+            }));
 
             if (!response.IsSuccessStatusCode)
             {
@@ -45,7 +51,9 @@ public sealed class TurnstileVerificationService
             }
 
             var result = await response.Content.ReadFromJsonAsync<TurnstileVerificationResponse>();
-            return result?.Success == true;
+                 return result?.Success == true &&
+                     string.Equals(result.Action, expectedAction, StringComparison.Ordinal) &&
+                     allowedHostnames.Any(hostname => string.Equals(hostname, result.Hostname, StringComparison.OrdinalIgnoreCase));
         }
         catch (HttpRequestException ex)
         {
@@ -57,5 +65,7 @@ public sealed class TurnstileVerificationService
     private sealed class TurnstileVerificationResponse
     {
         public bool Success { get; set; }
+        public string? Action { get; set; }
+        public string? Hostname { get; set; }
     }
 }
