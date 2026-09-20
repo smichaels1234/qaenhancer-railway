@@ -75,8 +75,13 @@ public class BugsController : ControllerBase
                 return Unauthorized();
             }
 
-            var bug = await GetVisibleBugs(currentUser)
-                .FirstOrDefaultAsync(b => b.Id == id);
+            if (!await _planEntitlementService.IsOrganizationAdminAsync(currentUser.Id, currentUser.OrganizationId))
+            {
+                return Forbid();
+            }
+
+            var bug = await _context.Bugs
+                .FirstOrDefaultAsync(b => b.Id == id && b.IsActive && b.OrganizationId == currentUser.OrganizationId);
 
             if (bug == null)
             {

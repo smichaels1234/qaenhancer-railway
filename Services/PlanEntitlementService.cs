@@ -50,6 +50,22 @@ public sealed class PlanEntitlementService
                 user.Id == subscription.UserId &&
                 user.OrganizationId == organizationId));
     }
+
+    public async Task<bool> IsOrganizationAdminAsync(string userId, string organizationId)
+    {
+        var adminUserId = await _context.Subscriptions
+            .Where(subscription =>
+                subscription.Status == "active" &&
+                (subscription.PlanType == "pro" || subscription.PlanType == "custom") &&
+                _context.Users.Any(user =>
+                    user.Id == subscription.UserId &&
+                    user.OrganizationId == organizationId))
+            .OrderByDescending(subscription => subscription.UpdatedAt)
+            .Select(subscription => subscription.UserId)
+            .FirstOrDefaultAsync();
+
+        return adminUserId == userId;
+    }
 }
 
 public sealed record PlanEntitlement(string PlanType, int? BugLimit)
