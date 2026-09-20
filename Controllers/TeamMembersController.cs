@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using backend.Data;
 using backend.Models;
 using backend.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -14,15 +15,18 @@ namespace backend.Controllers;
 [Authorize]
 public class TeamMembersController : ControllerBase
 {
+    private readonly QAEnhancerDbContext _context;
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly ILogger<TeamMembersController> _logger;
     private readonly PlanEntitlementService _planEntitlementService;
 
     public TeamMembersController(
+        QAEnhancerDbContext context,
         UserManager<ApplicationUser> userManager,
         ILogger<TeamMembersController> logger,
         PlanEntitlementService planEntitlementService)
     {
+        _context = context;
         _userManager = userManager;
         _logger = logger;
         _planEntitlementService = planEntitlementService;
@@ -45,6 +49,17 @@ public class TeamMembersController : ControllerBase
             });
         }
 
+        var adminUserId = await _context.Subscriptions
+            .Where(subscription =>
+                subscription.Status == "active" &&
+                (subscription.PlanType == "pro" || subscription.PlanType == "custom") &&
+                _context.Users.Any(user =>
+                    user.Id == subscription.UserId &&
+                    user.OrganizationId == currentUser.OrganizationId))
+            .OrderByDescending(subscription => subscription.UpdatedAt)
+            .Select(subscription => subscription.UserId)
+            .FirstOrDefaultAsync();
+
         var users = await _userManager.Users
             .Where(u => u.OrganizationId == currentUser.OrganizationId)
             .OrderBy(u => u.Email)
@@ -53,7 +68,8 @@ public class TeamMembersController : ControllerBase
                 Id = u.Id,
                 Email = u.Email ?? string.Empty,
                 FullName = u.FullName,
-                CreatedAt = u.CreatedAt
+                CreatedAt = u.CreatedAt,
+                IsAdmin = u.Id == adminUserId
             })
             .ToListAsync();
 
@@ -146,6 +162,7 @@ public class TeamMemberResponse
     public string Email { get; set; } = string.Empty;
     public string? FullName { get; set; }
     public DateTime CreatedAt { get; set; }
+    public bool IsAdmin { get; set; }
 }
 
 public class CreateTeamMemberRequest
