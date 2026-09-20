@@ -258,8 +258,8 @@ public class BugsController : ControllerBase
                 return Unauthorized();
             }
 
-            var bug = await _context.Bugs
-                .FirstOrDefaultAsync(b => b.Id == id && b.IsActive && b.UserId == currentUser.Id && b.OrganizationId == currentUser.OrganizationId);
+            var bug = await GetVisibleBugs(currentUser)
+                .FirstOrDefaultAsync(b => b.Id == id);
 
             if (bug == null)
             {
