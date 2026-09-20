@@ -54,7 +54,7 @@ namespace backend.Data
             modelBuilder.Entity<Bug>(entity =>
             {
                 entity.HasKey(e => e.Id);
-                entity.Property(e => e.Title).IsRequired().HasMaxLength(500);
+                entity.Property(e => e.Title).IsRequired();
                 entity.Property(e => e.Description).IsRequired().HasMaxLength(2000);
                 entity.Property(e => e.Status).IsRequired().HasMaxLength(20);
                 entity.Property(e => e.Severity).HasMaxLength(20);

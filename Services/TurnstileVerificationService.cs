@@ -5,15 +5,18 @@ public sealed class TurnstileVerificationService
     private const string VerificationEndpoint = "https://challenges.cloudflare.com/turnstile/v0/siteverify";
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly IConfiguration _configuration;
+    private readonly IHostEnvironment _environment;
     private readonly ILogger<TurnstileVerificationService> _logger;
 
     public TurnstileVerificationService(
         IHttpClientFactory httpClientFactory,
         IConfiguration configuration,
+        IHostEnvironment environment,
         ILogger<TurnstileVerificationService> logger)
     {
         _httpClientFactory = httpClientFactory;
         _configuration = configuration;
+        _environment = environment;
         _logger = logger;
     }
 
@@ -32,6 +35,11 @@ public sealed class TurnstileVerificationService
         {
             _logger.LogWarning("Turnstile verification is not configured or the token is missing.");
             return false;
+        }
+
+        if (_environment.IsDevelopment())
+        {
+            return true;
         }
 
         try

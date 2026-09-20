@@ -10,7 +10,6 @@ public class Bug
     public Guid Id { get; set; } = Guid.NewGuid();
 
     [Required]
-    [MaxLength(500)]
     public string Title { get; set; } = string.Empty;
 
     [Required]
