@@ -43,7 +43,7 @@ public class BugsController : ControllerBase
                 return Unauthorized();
             }
 
-            var query = _context.Bugs.Where(b => b.IsActive && b.UserId == currentUser.Id && b.OrganizationId == currentUser.OrganizationId);
+            var query = GetVisibleBugs(currentUser);
 
             if (!string.IsNullOrEmpty(url))
             {
@@ -75,8 +75,8 @@ public class BugsController : ControllerBase
                 return Unauthorized();
             }
 
-            var bug = await _context.Bugs
-                .FirstOrDefaultAsync(b => b.Id == id && b.IsActive && b.UserId == currentUser.Id && b.OrganizationId == currentUser.OrganizationId);
+            var bug = await GetVisibleBugs(currentUser)
+                .FirstOrDefaultAsync(b => b.Id == id);
 
             if (bug == null)
             {
@@ -168,13 +168,15 @@ public class BugsController : ControllerBase
                 return Unauthorized();
             }
 
-            var bug = await _context.Bugs
-                .FirstOrDefaultAsync(b => b.Id == id && b.IsActive && b.UserId == currentUser.Id && b.OrganizationId == currentUser.OrganizationId);
+            var bug = await GetVisibleBugs(currentUser)
+                .FirstOrDefaultAsync(b => b.Id == id);
 
             if (bug == null)
             {
                 return NotFound();
             }
+
+            var isOwner = bug.UserId == currentUser.Id;
 
             // Update only provided fields
             if (!string.IsNullOrEmpty(request.Title))
@@ -199,6 +201,11 @@ public class BugsController : ControllerBase
 
             if (request.AssignedUserId != null)
             {
+                if (!isOwner)
+                {
+                    return Forbid();
+                }
+
                 if (string.IsNullOrWhiteSpace(request.AssignedUserId))
                 {
                     bug.AssignedUserId = null;
@@ -334,6 +341,14 @@ public class BugsController : ControllerBase
         }
 
         return await _userManager.FindByIdAsync(userId);
+    }
+
+    private IQueryable<Bug> GetVisibleBugs(ApplicationUser currentUser)
+    {
+        return _context.Bugs.Where(b =>
+            b.IsActive &&
+            b.OrganizationId == currentUser.OrganizationId &&
+            (b.UserId == currentUser.Id || b.AssignedUserId == currentUser.Id));
     }
 
     private async Task<ActionResult?> CanCreateBugsAsync(ApplicationUser currentUser, int requestedBugCount)
