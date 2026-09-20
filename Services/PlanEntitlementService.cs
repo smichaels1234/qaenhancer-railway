@@ -40,6 +40,16 @@ public sealed class PlanEntitlementService
         var entitlement = await GetEntitlementAsync(userId);
         return entitlement.PlanType is "pro" or "custom";
     }
+
+    public async Task<bool> HasOrganizationPaidPlanAsync(string organizationId)
+    {
+        return await _context.Subscriptions.AnyAsync(subscription =>
+            subscription.Status == "active" &&
+            (subscription.PlanType == "pro" || subscription.PlanType == "custom") &&
+            _context.Users.Any(user =>
+                user.Id == subscription.UserId &&
+                user.OrganizationId == organizationId));
+    }
 }
 
 public sealed record PlanEntitlement(string PlanType, int? BugLimit)

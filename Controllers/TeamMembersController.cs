@@ -37,7 +37,7 @@ public class TeamMembersController : ControllerBase
             return Unauthorized();
         }
 
-        if (!await _planEntitlementService.HasPaidPlanAsync(currentUser.Id))
+        if (!await _planEntitlementService.HasOrganizationPaidPlanAsync(currentUser.OrganizationId))
         {
             return StatusCode(StatusCodes.Status403Forbidden, new
             {
