@@ -17,6 +17,7 @@ namespace backend.Data
         public DbSet<Subscription> Subscriptions { get; set; }
         public DbSet<CustomPlanRequest> CustomPlanRequests { get; set; }
         public DbSet<UserSession> UserSessions { get; set; }
+        public DbSet<ApplicationRoi> ApplicationRoi { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -84,6 +85,21 @@ namespace backend.Data
                     .WithMany()
                     .HasForeignKey(e => e.AssignedUserId)
                     .OnDelete(DeleteBehavior.SetNull);
+            });
+
+            modelBuilder.Entity<ApplicationRoi>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.OrganizationId).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.ApplicationName).IsRequired().HasMaxLength(500);
+                entity.Property(e => e.ActualCost).HasPrecision(18, 2);
+                entity.Property(e => e.RealizedRevenue).HasPrecision(18, 2);
+                entity.Property(e => e.HoursAvoided).HasPrecision(18, 2);
+                entity.Property(e => e.LaborRate).HasPrecision(18, 2);
+                entity.Property(e => e.DowntimeAvoided).HasPrecision(18, 2);
+                entity.Property(e => e.IncidentCost).HasPrecision(18, 2);
+                entity.Property(e => e.UpdatedAt).IsRequired();
+                entity.HasIndex(e => new { e.OrganizationId, e.ApplicationName }).IsUnique();
             });
 
             // Configure Subscription entity
