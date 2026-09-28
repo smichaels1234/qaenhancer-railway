@@ -224,7 +224,9 @@ public class AuthController : ControllerBase
         var tokenHash = HashToken(request.RefreshToken);
         var session = await _context.UserSessions
             .SingleOrDefaultAsync(s => s.RefreshTokenHash == tokenHash);
-        if (session == null || session.RevokedAt != null || session.ExpiresAt <= DateTime.UtcNow)
+        var now = DateTime.UtcNow;
+        if (session == null || session.RevokedAt != null || session.ExpiresAt <= now ||
+            session.LastSeenAt <= now.AddMinutes(-30))
         {
             return Unauthorized(new { message = "Invalid, revoked, or expired refresh token" });
         }
@@ -239,8 +241,8 @@ public class AuthController : ControllerBase
         var newRefreshToken = _tokenService.GenerateRefreshToken();
 
         session.RefreshTokenHash = HashToken(newRefreshToken);
-        session.LastSeenAt = DateTime.UtcNow;
-        session.ExpiresAt = DateTime.UtcNow.AddDays(7);
+        session.LastSeenAt = now;
+        session.ExpiresAt = now.AddDays(7);
         user.RefreshToken = newRefreshToken;
         user.RefreshTokenExpiryTime = session.ExpiresAt;
         await _context.SaveChangesAsync();
@@ -309,8 +311,9 @@ public class AuthController : ControllerBase
             return Unauthorized();
         }
 
+        var now = DateTime.UtcNow;
         var sessions = await _context.UserSessions
-            .Where(s => s.UserId == userId && s.RevokedAt == null && s.ExpiresAt > DateTime.UtcNow)
+            .Where(s => s.UserId == userId && s.RevokedAt == null && s.ExpiresAt > now && s.LastSeenAt > now.AddMinutes(-30))
             .OrderByDescending(s => s.LastSeenAt)
             .Select(s => new SessionInfo(s.Id, s.CreatedAt, s.LastSeenAt, s.ExpiresAt, s.IpAddress, s.UserAgent))
             .ToListAsync();
